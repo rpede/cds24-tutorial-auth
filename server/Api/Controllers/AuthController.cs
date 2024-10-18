@@ -16,6 +16,7 @@ public class AuthController : ControllerBase
 {
     [HttpPost]
     [Route("login")]
+    [AllowAnonymous]
     public async Task<LoginResponse> Login(
         [FromServices] UserManager<User> userManager,
         [FromServices] IValidator<LoginRequest> validator,
@@ -37,6 +38,7 @@ public class AuthController : ControllerBase
 
     [HttpPost]
     [Route("register")]
+    [AllowAnonymous]
     public async Task<RegisterResponse> Register(
         IOptions<AppOptions> options,
         [FromServices] UserManager<User> userManager,

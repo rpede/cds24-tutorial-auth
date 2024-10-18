@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using FluentValidation;
 using Service.Repositories;
+using Service.Security;
 using Entities = DataAccess.Entities;
 
 namespace Service.Draft;
@@ -44,14 +46,14 @@ public class DraftService(
             ));
     }
 
-    public async Task<long> Create(Dto.DraftFormData data)
+    public async Task<long> Create(ClaimsPrincipal principal, Dto.DraftFormData data)
     {
         _draftValidator.ValidateAndThrow(data);
         var post = new Entities.Post
         {
             Title = data.Title,
             Content = data.Content,
-            AuthorId = null, // TODO fix
+            AuthorId = principal.GetUserId(),
             PublishedAt = data.Publish ?? false ? DateTime.UtcNow : null,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
@@ -60,12 +62,13 @@ public class DraftService(
         return post.Id;
     }
 
-    public async Task Update(long id, Dto.DraftFormData data)
+    public async Task Update(ClaimsPrincipal principal, long id, Dto.DraftFormData data)
     {
         _draftValidator.ValidateAndThrow(data);
         var post =
             _postRepository.Query().SingleOrDefault(x => x.Id == id)
             ?? throw new NotFoundError(nameof(Entities.Post), new { id });
+        if (principal.GetUserId() != post.AuthorId) throw new ForbiddenError();
         post.Title = data.Title;
         post.Content = data.Content;
         post.UpdatedAt = DateTime.UtcNow;
@@ -75,6 +78,7 @@ public class DraftService(
         }
         await _postRepository.Update(post);
     }
+
 
     public async Task Delete(long id)
     {

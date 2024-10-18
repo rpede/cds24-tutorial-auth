@@ -2,6 +2,7 @@ using DataAccess;
 using DataAccess.Entities;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -59,6 +60,13 @@ public class Program
             {
                 o.TokenValidationParameters = JwtTokenClaimService.ValidationParameters(options);
             });
+        builder.Services.AddAuthorization(options =>
+        {
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                // Globally require users to be authenticated
+                .RequireAuthenticatedUser()
+                .Build();
+        });
         builder.Services.AddScoped<ITokenClaimsService, JwtTokenClaimService>();
         #endregion
 
@@ -137,6 +145,8 @@ public class Program
 
         app.UseHttpsRedirection();
 
+        app.UseAuthentication();
+        app.UseAuthorization();
         app.MapControllers();
 
         app.Run();
