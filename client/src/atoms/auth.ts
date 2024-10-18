@@ -1,7 +1,25 @@
+import { useNavigate } from "react-router-dom";
 import { atom, useAtom } from "jotai";
 import { AuthUserInfo } from "../api";
 import { http } from "../http";
-import { useNavigate } from "react-router-dom";
+import { atomWithStorage, createJSONStorage } from "jotai/utils";
+
+// Storage key for JWT
+export const TOKEN_KEY = "token";
+export const tokenStorage = createJSONStorage<string | null>(
+    () => sessionStorage,
+);
+
+const jwtAtom = atomWithStorage<string | null>(TOKEN_KEY, null, tokenStorage);
+
+const userInfoAtom = atom(async (get) => {
+  // Create a dependency on 'token' atom
+  const token = get(jwtAtom);
+  if (!token) return null;
+  // Fetch user-info
+  const response = await http.authUserinfoList();
+  return response.data;
+});
 
 export type Credentials = { email: string; password: string };
 
@@ -11,30 +29,20 @@ type AuthHook = {
   logout: () => void;
 };
 
-const isLoggedInAtom = atom(false);
-
-const userInfoAtom = atom(async (get) => {
-  if (get(isLoggedInAtom)) {
-    const response = await http.authUserinfoList();
-    return response.data;
-  } else {
-    return null;
-  }
-});
-
 export const useAuth = () => {
-  const [_, setIsLoggedIn] = useAtom(isLoggedInAtom);
+  const [_, setJwt] = useAtom(jwtAtom);
   const [user] = useAtom(userInfoAtom);
   const navigate = useNavigate();
 
   const login = async (credentials: Credentials) => {
-    await http.authLoginCreate(credentials);
-    setIsLoggedIn(true);
+    const response = await http.authLoginCreate(credentials);
+    const data = response.data;
+    setJwt(data.jwt!);
     navigate("/");
   };
 
   const logout = async () => {
-    await http.authLogoutCreate();
+    setJwt(null);
     navigate("/login");
   };
 

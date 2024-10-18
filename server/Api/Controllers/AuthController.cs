@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Service;
 using Service.Auth.Dto;
+using Service.Security;
 
 namespace Api.Controllers;
 
@@ -16,21 +17,22 @@ public class AuthController : ControllerBase
     [HttpPost]
     [Route("login")]
     public async Task<LoginResponse> Login(
-        [FromServices] SignInManager<User> signInManager,
+        [FromServices] UserManager<User> userManager,
         [FromServices] IValidator<LoginRequest> validator,
+        [FromServices] ITokenClaimsService tokenClaimsService,
         [FromBody] LoginRequest data
     )
     {
         await validator.ValidateAndThrowAsync(data);
-        var result = await signInManager.PasswordSignInAsync(
-            data.Email,
-            data.Password,
-            false,
-            true
-        );
-        if (!result.Succeeded)
+        var user = await userManager.FindByEmailAsync(data.Email);
+        if (user == null || !await userManager.CheckPasswordAsync(user, data.Password))
+        {
             throw new AuthenticationError();
-        return new LoginResponse();
+        }
+
+        var token = await tokenClaimsService.GetTokenAsync(data.Email);
+
+        return new LoginResponse(Jwt: token);
     }
 
     [HttpPost]
