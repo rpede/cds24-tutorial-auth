@@ -21,7 +21,16 @@ public class AuthController : ControllerBase
         [FromBody] LoginRequest data
     )
     {
-        throw new NotImplementedException();
+        await validator.ValidateAndThrowAsync(data);
+        var result = await signInManager.PasswordSignInAsync(
+            data.Email,
+            data.Password,
+            false,
+            true
+        );
+        if (!result.Succeeded)
+            throw new AuthenticationError();
+        return new LoginResponse();
     }
 
     [HttpPost]
@@ -33,20 +42,37 @@ public class AuthController : ControllerBase
         [FromBody] RegisterRequest data
     )
     {
-        throw new NotImplementedException();
+        await validator.ValidateAndThrowAsync(data);
+
+        var user = new User { UserName = data.Email, Email = data.Email };
+        var result = await userManager.CreateAsync(user, data.Password);
+        if (!result.Succeeded)
+        {
+            throw new ValidationError(
+                result.Errors.ToDictionary(x => x.Code, x => new[] { x.Description })
+            );
+        }
+        await userManager.AddToRoleAsync(user, Role.Reader);
+        return new RegisterResponse(Email: user.Email, Name: user.UserName);
     }
 
     [HttpPost]
     [Route("logout")]
     public async Task<IResult> Logout([FromServices] SignInManager<User> signInManager)
     {
-        throw new NotImplementedException();
+        await signInManager.SignOutAsync();
+        return Results.Ok();
     }
 
     [HttpGet]
     [Route("userinfo")]
     public async Task<AuthUserInfo> UserInfo([FromServices] UserManager<User> userManager)
     {
-        throw new NotImplementedException();
+        var username = (HttpContext.User.Identity?.Name) ?? throw new AuthenticationError();
+        var user = await userManager.FindByNameAsync(username) ?? throw new AuthenticationError();
+        var roles = await userManager.GetRolesAsync(user);
+        var isAdmin = roles.Contains(Role.Admin);
+        var canPublish = roles.Contains(Role.Editor) || isAdmin;
+        return new AuthUserInfo(username, isAdmin, canPublish);
     }
 }

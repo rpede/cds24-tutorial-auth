@@ -1,5 +1,6 @@
 using DataAccess;
 using DataAccess.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 
 namespace Service;
@@ -8,58 +9,35 @@ public class DbSeeder
 {
     private readonly ILogger<DbSeeder> logger;
     private readonly AppDbContext context;
+    private readonly UserManager<User> userManager;
+    private readonly RoleManager<IdentityRole> roleManager;
 
-    public DbSeeder(ILogger<DbSeeder> logger, AppDbContext context)
+    public DbSeeder(
+        ILogger<DbSeeder> logger,
+        AppDbContext context,
+        UserManager<User> userManager,
+        RoleManager<IdentityRole> roleManager
+    )
     {
         this.logger = logger;
         this.context = context;
+        this.userManager = userManager;
+        this.roleManager = roleManager;
     }
 
     public async Task SeedAsync()
     {
-        // context.Database.EnsureDeleted();
-        context.Database.EnsureCreated();
+        await context.Database.EnsureCreatedAsync();
 
-        if (!context.Users.Any())
-        {
-            context.Users.Add(
-                new User
-                {
-                    UserName = "admin@example.com",
-                    Email = "admin@example.com",
-                    Role = Role.Admin
-                }
-            );
-            context.Users.Add(
-                new User
-                {
-                    UserName = "editor@example.com",
-                    Email = "editor@example.com",
-                    Role = Role.Editor
-                }
-            );
-            context.Users.Add(
-                new User
-                {
-                    UserName = "othereditor@example.com",
-                    Email = "othereditor@example.com",
-                    Role = Role.Editor
-                }
-            );
-            context.Users.Add(
-                new User
-                {
-                    UserName = "reader@example.com",
-                    Email = "reader@example.com",
-                    Role = Role.Reader
-                }
-            );
-            await context.SaveChangesAsync();
-        }
+        await CreateRoles(Role.Admin, Role.Editor, Role.Reader);
+        await CreateUser(username: "admin@example.com", password: "S3cret!", role: Role.Admin);
+        await CreateUser(username: "editor@example.com", password: "S3cret!", role: Role.Editor);
+        await CreateUser(username: "othereditor@example.com", password: "S3cret!", role: Role.Editor);
+        await CreateUser(username: "reader@example.com", password: "S3cret!", role: Role.Reader);
 
-        if (!context.Posts.Where(p => p.Title == "First post").Any())
+        var author = await userManager.FindByNameAsync("editor@example.com");
+        if (!context.Posts.Any(p => p.Title == "First post"))
         {
-            var admin = context.Users.Single((user) => user.Email == "admin@example.com");
             context.Posts.Add(
                 new Post
                 {
@@ -71,55 +49,45 @@ Have you ever wondered how to make a hello-world application in Python?
 The answer is simply:
 ```py
 print('Hello World!')
-```
+````
+
                     ",
-                    AuthorId = admin!.Id,
+                    AuthorId = author!.Id,
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,
                     PublishedAt = DateTime.UtcNow
                 }
             );
         }
-        if (!context.Posts.Where(p => p.Title == "Draft").Any())
-        {
-            var editor = context.Users.Single((user) => user.Email == "editor@example.com");
-            context.Posts.Add(
-                new Post
-                {
-                    Title = "Draft",
-                    Content = "This is a draft post",
-                    AuthorId = editor!.Id,
-                    CreatedAt = DateTime.UtcNow,
-                    PublishedAt = null
-                }
-            );
-        }
         await context.SaveChangesAsync();
+    }
 
-        if (!context.Comments.Any())
+    private async Task CreateRoles(params string[] roles)
+    {
+        foreach (var role in roles)
         {
-            var reader = context.Users.Single((user) => user.Email == "reader@example.com");
-            context.Comments.Add(
-                new Comment
-                {
-                    Content = "First one to comment",
-                    AuthorId = reader.Id,
-                    PostId = context.Posts.First().Id
-                }
-            );
-            await context.SaveChangesAsync();
+            await roleManager.CreateAsync(new IdentityRole(role));
         }
     }
 
-    void CreateUser(string username, string password, string role)
+    async Task CreateUser(string username, string password, string role)
     {
+        if (await userManager.FindByNameAsync(username) != null) return;
         var user = new User
         {
             UserName = username,
             Email = username,
-            EmailConfirmed = true,
-            Role = role
+            EmailConfirmed = true
         };
-        context.Users.Add(user);
+        var result = await userManager.CreateAsync(user, password);
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+            {
+                logger.LogWarning("{Code}: {Description}", error.Code, error.Description);
+            }
+        }
+        await userManager.AddToRoleAsync(user!, role!);
     }
+
 }
