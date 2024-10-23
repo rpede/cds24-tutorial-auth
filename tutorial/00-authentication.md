@@ -66,7 +66,8 @@ namespace DataAccess.Entities;
 public class User : IdentityUser { }
 ```
 
-The `IdentityUser` base class got all the previous fields from `User` defined and then some (see schema diagram above).
+The `IdentityUser` base class got all the previous fields from `User` defined
+and then some (see schema diagram above).
 
 C# classes are mapped to database tables through an instance of DbContext.
 The package you added before contains an extended version of DbContext called
@@ -228,6 +229,7 @@ export const useAuth = () => {
 
   const logout = async () => {
     await http.authLogoutCreate();
+    setIsLoggedIn(false);
     navigate("/login");
   };
 
