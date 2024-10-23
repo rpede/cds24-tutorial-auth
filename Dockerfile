@@ -7,14 +7,12 @@ COPY *.sln ./
 COPY server/Api/*.csproj ./server/Api/
 COPY server/DataAccess/*.csproj ./server/DataAccess/
 COPY server/Service/*.csproj ./server/Service/
-COPY server/UnitTests/*.csproj ./server/UnitTests/
 RUN dotnet restore
 
 # copy everything else and build app
 COPY server/Api/. ./server/Api/
 COPY server/DataAccess/. ./server/DataAccess/
 COPY server/Service/. ./server/Service/
-COPY server/UnitTests/. ./server/UnitTests/
 RUN dotnet publish -c release -o /app --no-restore
 
 # final stage/image
