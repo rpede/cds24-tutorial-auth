@@ -1,3 +1,4 @@
+using Api.Misc;
 using DataAccess;
 using DataAccess.Entities;
 using FluentValidation;
@@ -68,6 +69,7 @@ public class Program
                 .Build();
         });
         builder.Services.AddScoped<ITokenClaimsService, JwtTokenClaimService>();
+        builder.Services.AddSingleton<IEmailSender<User>, AppEmailSender>();
         #endregion
 
         #region Services

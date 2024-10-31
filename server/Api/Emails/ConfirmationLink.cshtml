@@ -1,0 +1,10 @@
+@using RazorLight
+@inherits TemplatePage<Api.Misc.EmailModel>
+
+<h1>Confirm your email</h1>
+<h3>Hi @Model.User.UserName, thank you for signing up on our site!</h3>
+<p>
+    We need you to confirm your email address.
+    To do that please click on the link below.
+</p>
+<a href="@Model.CodeOrLink">Confirm @Model.Email</a>

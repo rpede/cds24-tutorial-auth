@@ -42,6 +42,7 @@ public class AuthController : ControllerBase
     public async Task<RegisterResponse> Register(
         IOptions<AppOptions> options,
         [FromServices] UserManager<User> userManager,
+        [FromServices] IEmailSender<User> emailSender,
         [FromServices] IValidator<RegisterRequest> validator,
         [FromBody] RegisterRequest data
     )
@@ -57,7 +58,35 @@ public class AuthController : ControllerBase
             );
         }
         await userManager.AddToRoleAsync(user, Role.Reader);
+        
+        var token = await userManager.GenerateEmailConfirmationTokenAsync(user);
+
+        var qs = new Dictionary<string, string?> { { "token", token }, { "email", user.Email } };
+        var confirmationLink = new UriBuilder(options.Value.Address)
+        {
+            Path = "/api/auth/confirm",
+            Query = QueryString.Create(qs).Value
+        }.Uri.ToString();
+
+        await emailSender.SendConfirmationLinkAsync(user, user.Email, confirmationLink);
+
         return new RegisterResponse(Email: user.Email, Name: user.UserName);
+    }
+    
+    [HttpGet]
+    [Route("confirm")]
+    [AllowAnonymous]
+    public async Task<IResult> ConfirmEmail(
+        [FromServices] UserManager<User> userManager,
+        string token,
+        string email
+    )
+    {
+        var user = await userManager.FindByEmailAsync(email) ?? throw new AuthenticationError();
+        var result = await userManager.ConfirmEmailAsync(user, token);
+        if (!result.Succeeded)
+            throw new AuthenticationError();
+        return Results.Content("<h1>Email confirmed</h1>", "text/html", statusCode: 200);
     }
 
     [HttpPost]
