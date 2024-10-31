@@ -31,6 +31,7 @@ export interface CommentForPost {
 
 export interface CommentFormData {
   content?: string | null;
+  authorId?: string | null;
 }
 
 export interface Draft {
@@ -54,6 +55,10 @@ export interface DraftFormData {
   publish?: boolean | null;
 }
 
+export interface InitPasswordResetRequest {
+  email?: string | null;
+}
+
 export interface LoginRequest {
   email?: string | null;
   password?: string | null;
@@ -61,6 +66,12 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   jwt?: string | null;
+}
+
+export interface PasswordResetRequest {
+  email?: string | null;
+  token?: string | null;
+  newPassword?: string | null;
 }
 
 export interface Post {
@@ -335,6 +346,42 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         method: "GET",
         secure: true,
         format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Auth
+     * @name AuthInitPasswordResetCreate
+     * @request POST:/api/auth/init-password-reset
+     * @secure
+     */
+    authInitPasswordResetCreate: (data: InitPasswordResetRequest, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/api/auth/init-password-reset`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @tags Auth
+     * @name AuthPasswordResetCreate
+     * @request POST:/api/auth/password-reset
+     * @secure
+     */
+    authPasswordResetCreate: (data: PasswordResetRequest, params: RequestParams = {}) =>
+      this.request<void, any>({
+        path: `/api/auth/password-reset`,
+        method: "POST",
+        body: data,
+        secure: true,
+        type: ContentType.Json,
         ...params,
       }),
 

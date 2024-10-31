@@ -3,6 +3,7 @@ import { SubmitHandler, useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import toast from "react-hot-toast";
+import { Link } from "react-router-dom";
 
 const schema: yup.ObjectSchema<Credentials> = yup
   .object({
@@ -79,9 +80,9 @@ export default function Login() {
               />
               <small className="text-error">{errors.password?.message}</small>
               <label className="label">
-                <a href="#" className="label-text-alt link link-hover">
+                <Link to="/init-password-reset" className="label-text-alt link link-hover">
                   Forgot password?
-                </a>
+                </Link>
               </label>
             </div>
             <div className="form-control mt-6">

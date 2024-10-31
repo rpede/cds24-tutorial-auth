@@ -9,10 +9,12 @@ import ErrorPage from "./pages/error-page";
 import Login from "./pages/auth/login";
 import Register from "./pages/auth/register";
 import RegisterSuccess from "./pages/auth/register-success";
+import InitPasswordReset from "./pages/auth/init-password-reset";
 import DraftList, { draftsLoader } from "./pages/drafts/list";
 import DraftCreate from "./pages/drafts/create";
 import DraftUpdate, { draftLoader } from "./pages/drafts/update";
 import Post, { postLoader } from "./pages/post";
+import PasswordReset from "./pages/auth/password-reset";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -21,6 +23,8 @@ const router = createBrowserRouter(
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/register-success" element={<RegisterSuccess />} />
+      <Route path="/init-password-reset" element={<InitPasswordReset />} />
+      <Route path="/password-reset" element={<PasswordReset />} />
       <Route path="/post">
         <Route path=":id" element={<Post />} loader={postLoader}></Route>
       </Route>

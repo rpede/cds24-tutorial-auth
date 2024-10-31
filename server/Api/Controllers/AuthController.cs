@@ -108,4 +108,48 @@ public class AuthController : ControllerBase
         var canPublish = roles.Contains(Role.Editor) || isAdmin;
         return new AuthUserInfo(username, isAdmin, canPublish);
     }
+
+    [AllowAnonymous]
+    [HttpPost]
+    [Route("init-password-reset")]
+    public async Task<IResult> InitPasswordReset(
+        IOptions<AppOptions> options,
+        [FromServices] UserManager<User> userManager,
+        [FromServices] IEmailSender<User> emailSender,
+        [FromBody] InitPasswordResetRequest data
+    )
+    {
+        var user = await userManager.FindByEmailAsync(data.Email);
+        if (user is not { EmailConfirmed: true }) return Results.Ok();
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        var qs = new Dictionary<string, string?> { { "token", token }, { "email", user.Email } };
+        var confirmationLink = new UriBuilder(options.Value.Address)
+        {
+            Path = "/password-reset",
+            Query = QueryString.Create(qs).Value
+        }.Uri.ToString();
+        await emailSender.SendPasswordResetLinkAsync(user, user.Email!, confirmationLink);
+        return Results.Ok();
+    }
+    
+    [AllowAnonymous]
+    [HttpPost]
+    [Route("password-reset")]
+    public async Task<IResult> PasswordReset(
+        IOptions<AppOptions> options,
+        [FromServices] UserManager<User> userManager,
+        [FromServices] IEmailSender<User> emailSender,
+        [FromBody] PasswordResetRequest data
+    )
+    {
+        var user = await userManager.FindByEmailAsync(data.Email);
+        var result = await userManager.ResetPasswordAsync(user!, data.Token, data.NewPassword);
+        if (!result.Succeeded)
+        {
+            throw new ValidationError(
+                result.Errors.ToDictionary(x => x.Code, x => new[] { x.Description })
+            );
+        }
+        return Results.Ok();
+    }
 }
