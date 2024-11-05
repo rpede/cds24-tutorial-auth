@@ -47,7 +47,7 @@ attached.
 You can reset the database with:
 
 ```sh
-docker compose down --remove-orphans && docker compose up 
+docker compose down --remove-orphans && docker compose up
 ```
 
 ## How to use
@@ -68,7 +68,7 @@ Here are the URLs to access the various parts.
 When running directly from file-system:
 
 | Sub-system  | URL                                            |
-| ----------- |------------------------------------------------|
+| ----------- | ---------------------------------------------- |
 | Client      | <http://localhost:5173/>                       |
 | Server      | <http://localhost:5088/api/swagger/index.html> |
 | MailCatcher | <http://localhost:1080/>                       |
@@ -172,4 +172,5 @@ Make a commit each time you complete an exercise.
 
 0. [Authentication](./tutorial/00-authentication.md)
 1. [Sessions](./tutorial/01-session.md)
-1. [Authorization](./tutorial/02-authorization.md)
+2. [Authorization](./tutorial/02-authorization.md)
+3. [Emails](./tutorial/03-email-verification.md)
